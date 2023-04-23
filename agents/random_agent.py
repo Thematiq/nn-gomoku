@@ -4,8 +4,8 @@ from agents.agent import Agent
 
 
 class RandomAgent(Agent):
-    def init(self, seed):
-        pass
+    def __init__(self, seed):
+        np.random.seed(seed)
 
     def update(self, state, action, reward, next_state, terminal):
         pass

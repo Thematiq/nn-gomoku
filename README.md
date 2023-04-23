@@ -48,7 +48,7 @@ opponent = RandomAgent()
 ```
 
 This line creates an instance of an opponent agent. **Attention!** The opponent agent must be already trained and ready 
-to play. You can use the `load` method to restore the agent's state from the file.
+to play. You can use the static `load` method to restore the agent's state from the file.
 
 ```python 
 env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
@@ -90,14 +90,14 @@ Finally, the `check_five_in_row` method is used to check whether the agent won t
 ### Agent implementation
 
 The agent implementations are located in the `agents` directory. The `Agent` class is an abstract class which defines 
-the interface of the agent. Every agent must implement three methods: `init`, `update` and `act`. 
+the interface of the agent. Every agent must implement three methods: `__init__`, `update` and `act`. 
 
 ```python
-def init(self, seed):
+def __init__(self, ..., seed):
     ...
 ```
 
-The `init` method is used to initialize the agent's state. The `seed` parameter is used to set the random seed.
+The `__init__` method is used to initialize the agent's state. The `seed` parameter is used to set the random seed.
 
 ```python
 def update(self, prev_state, action, reward, state, terminal):

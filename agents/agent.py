@@ -3,10 +3,6 @@ from abc import ABC, abstractmethod
 
 class Agent(ABC):
     @abstractmethod
-    def init(self, seed):
-        pass
-
-    @abstractmethod
     def update(self, state, action, reward, next_state, terminal):
         pass
 
@@ -17,7 +13,8 @@ class Agent(ABC):
     def save(self, path):
         raise NotImplementedError()
 
-    def load(self, path):
+    @staticmethod
+    def load(path):
         raise NotImplementedError()
 
     def opponent_policy(self, state, *_):

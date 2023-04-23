@@ -10,7 +10,7 @@ from agents import *
 
 def run(env, agent):
     prev_state = np.zeros_like(env.observation_space.shape)
-    action = env.action_space.sample()
+    action = np.random.choice(env.action_space.n)
     terminal = False
 
     while not terminal:
@@ -30,11 +30,12 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    agent = RandomAgent()
-    opponent = RandomAgent()
+    agent = RandomAgent(42)
+    opponent = RandomAgent(123)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)
+    np.random.seed(args.seed)
 
     if run(env, agent):
         print('Agent wins!')
