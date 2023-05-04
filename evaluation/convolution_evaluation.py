@@ -1,6 +1,4 @@
-import torch
 import torch.nn.functional as F
-import numpy as np
 
 from .evaluation import Evaluation
 from .filters import *
@@ -18,20 +16,31 @@ class ConvolutionEvaluation(Evaluation):
     """
     def __init__(self, filters, mask_values):
         """
-
         :param filters: list of filters to be applied to torch.nn.functional as weight parameter
         :param mask_values: list of absolute values - we will zero values with lower absolute value than this.
         """
         self.filters: torch.Tensor = filters
-        self.biases = torch.zeros(self.filters.shape[0])
         self.mask_values: torch.Tensor = mask_values
 
     def evaluate(self, state, player) -> float:
-        if isinstance(state, np.ndarray):
-            state = torch.tensor(state)
-        # for now state is a tensor of shape (N, 1, W, H)
-        # 0 - empty field, 1 - for white, -1 for black
-        x = F.conv2d(state, self.filters)
-        mask = x > self.biases & x < self.biases
-        x[mask] = 0
+        state = self.to_state_tensor(state)
+
+        x = F.conv2d(state, self.filters, padding='same')
+        x = torch.where(torch.abs(x) >= self.mask_values, x, 0)
+
+        # checking for infinity
+        x[x >= 5] = torch.inf
+        x[x <= -5] = -1*torch.inf
+
         return float(torch.sum(x))
+
+    def to_state_tensor(self, state) -> torch.Tensor:
+        """
+        Helper function to convert state from 0, 1, 2 to 0, 1, -1
+        :param state: Current game state
+        :return: Modified state
+        """
+        tensor_state = torch.tensor(state)
+        tensor_state[tensor_state == 2] = -1
+        tensor_state = tensor_state.to(torch.float32)
+        return torch.reshape(tensor_state, (1, 1, tensor_state.shape[0], tensor_state.shape[1]))
