@@ -4,13 +4,13 @@ from agents.agent import Agent
 
 
 class RandomAgent(Agent):
-    def __init__(self, seed):
+    def __init__(self, seed: int) -> None:
         np.random.seed(seed)
 
-    def update(self, state, action, reward, next_state, terminal):
+    def update(self, *_) -> None:
         pass
 
-    def act(self, state):
+    def act(self, state: np.ndarray, *_) -> int:
         if isinstance(state, np.ndarray):
             state = state.reshape(-1)
         else:
