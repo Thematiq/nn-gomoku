@@ -1,11 +1,13 @@
 from argparse import ArgumentParser
 
+import torch
 import numpy as np
 import gymnasium as gym
 import gym_gomoku
 from gym_gomoku.envs.util import GomokuUtil
 
 from agents import *
+from evaluation import *
 
 
 def run(env, agent):
@@ -30,8 +32,13 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    agent = RandomAgent(42)
-    opponent = RandomAgent(123)
+    filters = torch.concatenate([create_filter(5, 5, Position.VERTICAL),
+                                 create_filter(5, 3, Position.VERTICAL)])
+    mask = torch.tensor([[[5.]], [[3.]]])
+    evaluation = ConvolutionEvaluation(filters, mask)
+
+    agent = RandomAgent(123)
+    opponent = AlphaBetaAgent(depth=10, evaluator=evaluation)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)
