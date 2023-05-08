@@ -124,3 +124,8 @@ The `Agent` class also defines the `opponent_policy` method which is used to set
 environment. The `opponent_policy` method returns the next move of the opponent. The `load` and `save` methods are used
 to load and save the agent's state. You have to implement these methods in your agent if the agent has some state which 
 should be saved and restored (e.g., neural network weights).
+
+## Notes
+
+The agent plays as the black player ('X'). The opponent plays as the white player ('O'). The board has values {-1, 0, 1}
+where -1 represents the black player ('X'), 0 represents an empty field and 1 represents the white player ('O').
