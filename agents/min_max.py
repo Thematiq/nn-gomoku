@@ -38,7 +38,7 @@ class AlphaBetaAgent(Agent):
 
     @numba.jit(forceobj=True)
     def _maximize(self, board, depth, alpha, beta, opponent):
-        move_sign = 2 if opponent else 1
+        move_sign = -1 if opponent else 1
         best_val = -1 * np.inf
         best_pos = np.nan
         for current_pos in np.argwhere(board == 0):
@@ -60,7 +60,7 @@ class AlphaBetaAgent(Agent):
 
     @numba.jit(forceobj=True)
     def _minimize(self, board, depth, alpha, beta, opponent):
-        move_sign = 2 if opponent else 1
+        move_sign = -1 if opponent else 1
         best_val = np.inf
         best_pos = np.nan
         for current_pos in np.argwhere(board == 0):

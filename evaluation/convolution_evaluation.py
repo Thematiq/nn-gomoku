@@ -41,6 +41,5 @@ class ConvolutionEvaluation(Evaluation):
         :return: Modified state
         """
         tensor_state = torch.tensor(state)
-        tensor_state[tensor_state == 2] = -1
         tensor_state = tensor_state.to(torch.float32)
         return torch.reshape(tensor_state, (1, 1, tensor_state.shape[0], tensor_state.shape[1]))
