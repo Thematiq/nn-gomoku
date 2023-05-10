@@ -8,6 +8,7 @@ from gym_gomoku.envs.util import GomokuUtil
 
 from agents import *
 from evaluation import *
+from evaluation.evaluation import RandomEvaluation
 
 
 def run(env, agent):
@@ -35,10 +36,11 @@ if __name__ == '__main__':
     filters = torch.concatenate([create_filter(5, 5, Position.VERTICAL),
                                  create_filter(5, 3, Position.VERTICAL)])
     mask = torch.tensor([[[5.]], [[3.]]])
-    evaluation = ConvolutionEvaluation(filters, mask)
+    # evaluation = ConvolutionEvaluation(filters, mask)
+    evaluation = RandomEvaluation()
 
     agent = RandomAgent(123)
-    opponent = AlphaBetaAgent(depth=10, evaluator=evaluation)
+    opponent = AlphaBetaAgent(depth=2, evaluator=evaluation)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)
