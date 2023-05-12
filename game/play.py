@@ -30,7 +30,7 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    agent = DQN(42)
+    agent = DQN(board_size=15, seed=args.seed)
     opponent = RandomAgent(123)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)

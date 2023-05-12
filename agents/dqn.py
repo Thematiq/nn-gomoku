@@ -1,22 +1,21 @@
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+import torch.optim
 
 from agents import Agent
 from agents.random_agent import RandomAgent
 from agents.utils import ExperienceReplay
 
 
-BOARD_SIZE = 15
-
-
 class QNetwork(torch.nn.Module):
-    def __init__(self, hidden_dim: int = 128) -> None:
+    def __init__(self, board_size: int, hidden_dim: int = 128) -> None:
         super(QNetwork, self).__init__()
 
-        self.fc1 = torch.nn.Linear(BOARD_SIZE ** 2, hidden_dim)
+        self.fc1 = torch.nn.Linear(board_size ** 2, hidden_dim)
         self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = torch.nn.Linear(hidden_dim, BOARD_SIZE ** 2)
+        self.fc3 = torch.nn.Linear(hidden_dim, board_size ** 2)
 
         self.relu = torch.nn.ReLU()
 
@@ -36,6 +35,8 @@ class DQN(Agent):
 
     Parameters
     ----------
+    board_size : int, default=15
+        Size of the Gomoku board.
     seed : int, default=42
         Random seed.
     gamma : float, default=0.99
@@ -65,6 +66,7 @@ class DQN(Agent):
 
     def __init__(
             self,
+            board_size: int,
             seed: int = 42,
             gamma: float = 0.99,
             learning_rate: float = 3e-4,
@@ -77,12 +79,11 @@ class DQN(Agent):
             experience_replay_steps: int = 5
     ) -> None:
         torch.manual_seed(seed)
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.q = QNetwork().to(self.device)
-        self.q_target = QNetwork().to(self.device)
+        self.q = QNetwork(board_size)
+        self.q_target = QNetwork(board_size)
         self.q_target.load_state_dict(self.q.state_dict())
-        self.optimizer = Adam(self.q.parameters(), lr=learning_rate)
+        self.optimizer = torch.optim.Adam(self.q.parameters(), lr=learning_rate)
 
         self.random_agent = RandomAgent(seed)
         self.epsilon = epsilon
@@ -117,28 +118,27 @@ class DQN(Agent):
 
             q, q_target = self.q.state_dict(), self.q_target.state_dict()
             self.q_target.load_state_dict({
-                key: q[key] * self.soft_update + q_target[key] * (1 - self.soft_update) for key in q
+                key: deepcopy(q[key]) * self.soft_update + deepcopy(q_target[key]) * (1 - self.soft_update) for key in q
             })
 
-    def act(self, state: torch.Tensor, is_training=True) -> int:
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
+    def act(self, state: torch.Tensor, is_training=True) -> int:
         if torch.rand(1) < self.epsilon and is_training:
             return self.random_agent.act(state).item()
 
         with torch.no_grad():
-            state = torch.tensor(state, dtype=torch.float32)[None, ...].to(self.device)
+            state = torch.tensor(state, dtype=torch.float32)[None, ...]
             logits = self.q(state).squeeze()
             logits[state.flatten() != 0] = -torch.inf
 
-        return torch.distributions.Categorical(logits=logits).sample().item()
+        return logits.argmax().item()
 
     def save(self, path: str) -> None:
-        torch.save(self.model.state_dict(), path)
+        torch.save(self.q.state_dict(), path)
 
     def load(self, path: str) -> None:
-        self.model.load_state_dict(torch.load(path))
+        self.q.load_state_dict(torch.load(path))
 
     def opponent_policy(self, state: torch.Tensor, *_) -> int:
-        state = (state == 2) * 1 + (state == 1) * 2
-        return self.act(state, is_training=False)
+        return self.act(-state, is_training=False)
