@@ -11,8 +11,8 @@ from evaluation import *
 from evaluation.evaluation import RandomEvaluation
 
 
-def run(env, agent):
-    prev_state = np.zeros_like(env.observation_space.shape)
+def run(env: gym.Env, agent: Agent) -> bool:
+    prev_state = np.zeros(env.observation_space.shape)
     action = np.random.choice(env.action_space.n)
     terminal = False
 
@@ -33,14 +33,17 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    filters = torch.concatenate([create_filter(5, 5, Position.VERTICAL),
-                                 create_filter(5, 3, Position.VERTICAL)])
-    mask = torch.tensor([[[5.]], [[3.]]])
-    # evaluation = ConvolutionEvaluation(filters, mask)
-    evaluation = RandomEvaluation()
+#     filters = torch.concatenate([create_filter(5, 5, Position.VERTICAL),
+#                                  create_filter(5, 3, Position.VERTICAL)])
+#     mask = torch.tensor([[[5.]], [[3.]]])
+#     # evaluation = ConvolutionEvaluation(filters, mask)
+#     evaluation = RandomEvaluation()
 
-    agent = RandomAgent(123)
-    opponent = AlphaBetaAgent(depth=2, evaluator=evaluation)
+#     agent = RandomAgent(123)
+#     opponent = AlphaBetaAgent(depth=2, evaluator=evaluation)
+
+    agent = DQN(board_size=15, seed=args.seed)
+    opponent = RandomAgent(123)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)
