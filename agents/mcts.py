@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging as log
 import numpy as np
 
+from tqdm import trange
 from typing import Tuple, List, Dict, Optional, Callable
 from gym_gomoku.envs.util import GomokuUtil
 
@@ -20,7 +22,7 @@ ExpandPolicy = Callable[[Board], AvailableActions]
 
 
 def get_available_positions(board: Board) -> np.ndarray:
-    return np.argwhere(board.flatten() == 0)
+    return np.argwhere(board == 0).flatten()
 
 
 def default_expand_policy(board: Board) -> AvailableActions:
@@ -45,6 +47,10 @@ class MCTSNode:
         self._p = prior
 
     @property
+    def children(self) -> Dict[ActionPos, MCTSNode]:
+        return self._children
+
+    @property
     def visits(self) -> int:
         return self._visits
 
@@ -56,7 +62,7 @@ class MCTSNode:
         return self._parent is None
 
     def is_leaf(self) -> bool:
-        return bool(self._children)
+        return not bool(self._children)
 
     def expand(self, actions: AvailableActions):
         for action, prob in actions:
@@ -81,35 +87,59 @@ class MCTSNode:
             # swap players
             self._parent.update(-bp_val)
 
+    def make_root(self):
+        self._parent = None
 
-class MCTS:
-    def __init__(self, expand_policy: ExpandPolicy, rollout_policy: RolloutPolicy,
-                 confidence: float, samples_limit: int, expand_bound: int):
+
+class MCTSAgent(Agent):
+    def __init__(self, expand_policy: ExpandPolicy = default_expand_policy,
+                 rollout_policy: RolloutPolicy = default_rollout_policy,
+                 confidence: float = 1.41, samples_limit: int = 10_000, expand_bound: int = 1,
+                 board_size: int = 15, rollout_bound: int = 1_000, silent: bool = True):
         self._root = MCTSNode(None, 1.0)
         self._expand_policy = expand_policy
         self._rollout_policy = rollout_policy
         self._c = confidence
+        self._board_size = board_size
+        self._rollout_bound = rollout_bound
         self._samples_limit = samples_limit
+        self._silent_mode = silent
         self._expand_bound = min(samples_limit, expand_bound)
         self._util = GomokuUtil()
 
-    def __check_terminal(self, board, opponent):
+    def __check_terminal(self, board, is_player_opponent):
+        board = board.reshape(self._board_size, self._board_size)
         terminal, winner = self._util.check_five_in_row(board)
-        is_winner_opponent = winner == 'white'
+        if not terminal:
+            return None
 
-        if terminal:
-            if is_winner_opponent and opponent:
-                return np.inf
-            else:
-                return -1 * np.inf
+        is_winner_opponent = (winner == 'white')
 
-        return None
+        if is_winner_opponent == is_player_opponent:
+            return 1
+        elif winner == 'empty':
+            return 0
+        else:
+            return -1
+
 
     def __eval_rollout(self, board: Board, opponent) -> float:
-        pass
+        player = opponent
 
-    def __playout(self, board: Board, opponent: bool):
-        board = board.copy()
+        for _ in range(self._rollout_bound):
+            # we pass here a player, so we know the outcome for rollout
+            state = self.__check_terminal(board, player)
+            if state is not None:
+                return state
+            action_probs = self._rollout_policy(board)
+            next_action = max(action_probs, key=lambda x: x[1])[0]
+            board[next_action] = -1 if opponent else 1
+            opponent = not opponent
+        else:
+            # lmao never used for-else
+            log.warning(f"Rollout exceeded the limit of {self._rollout_bound}")
+
+    def __playout(self, board: Board, opponent: bool) -> None:
         node = self._root
         while True:
             if node.is_leaf():
@@ -120,12 +150,55 @@ class MCTS:
             opponent = not opponent
 
         actions = self._expand_policy(board)
-        is_end, winner = self.__check_terminal(board, opponent)
+        state = self.__check_terminal(board, opponent)
 
-        if not is_end and node.visits >= self._expand_bound:
+        if state is None and node.visits >= self._expand_bound:
             node.expand(actions)
 
-        bp_val = self.__eval_rollout(board)
+        bp_val = self.__eval_rollout(board, opponent)
+        # print(f'bp_val = {bp_val}, rollout board: \n {board.reshape(15, 15)}')
         node.backpropagation(bp_val)
 
+    def __play(self, board, opponent) -> ActionPos:
+        # Basic heuristic - if map is empty play the center
+        if (board == 0).all():
+            return board.shape[0] // 2
 
+        it = range(self._samples_limit) if self._silent_mode else trange(self._samples_limit)
+
+        for _ in it:
+            board_copy = board.copy()
+            self.__playout(board_copy, opponent)
+
+        return max(self._root.children.items(),
+                   key=lambda x: x[1].visits)[0]
+
+    def __update(self, last_move: ActionPos) -> None:
+        if last_move in self._root.children:
+            self._root = self._root.children[last_move]
+            self._root.make_root()
+        else:
+            self._root = MCTSNode(None, 1.0)
+
+    def update(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray,
+               terminal: bool) -> None:
+        self.__update(action)
+
+    def act(self, state: np.ndarray, is_training=True, opponent=False) -> int:
+        if not isinstance(state, np.ndarray):
+            board = state.board.encode().flatten()
+        else:
+            board = state.flatten()
+        self._root = MCTSNode(None, 1.0)
+        pos = self.__play(board, opponent)
+        return pos
+
+    def opponent_policy(self, state: np.ndarray, *_) -> int:
+        return self.act(state, opponent=True)
+
+    def save(self, path: str) -> None:
+        pass
+
+    @staticmethod
+    def load(path: str) -> 'Agent':
+        pass

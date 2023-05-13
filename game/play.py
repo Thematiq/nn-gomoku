@@ -7,19 +7,17 @@ import gym_gomoku
 from gym_gomoku.envs.util import GomokuUtil
 
 from agents import *
-from evaluation import *
-from evaluation.evaluation import RandomEvaluation
 
 
 def run(env: gym.Env, agent: Agent) -> bool:
     prev_state = np.zeros(env.observation_space.shape)
-    action = np.random.choice(env.action_space.n)
+    state = np.zeros(env.observation_space.shape)
     terminal = False
 
     while not terminal:
+        action = agent.act(state)
         state, reward, terminal, info = env.step(action)
         agent.update(prev_state, action, reward, state, terminal)
-        action = agent.act(state)
         prev_state = state
 
     return GomokuUtil().check_five_in_row(state)[1] == 'black'
@@ -42,8 +40,10 @@ if __name__ == '__main__':
 #     agent = RandomAgent(123)
 #     opponent = AlphaBetaAgent(depth=2, evaluator=evaluation)
 
-    agent = DQN(board_size=15, seed=args.seed)
-    opponent = RandomAgent(123)
+    # agent = DQN(board_size=15, seed=args.seed)
+    agent = MCTSAgent(samples_limit=5)
+    opponent = MCTSAgent(samples_limit=50)
+    # opponent = RandomAgent(123)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)
