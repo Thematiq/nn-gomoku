@@ -101,10 +101,11 @@ class AlphaBetaAgent(Agent):
             board = state
 
         board = board.astype(np.int32)
+        board_size = board.shape[0]
 
         node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
         # flatten the result
-        return node[1] + (node[0] * 15)
+        return node[1] + (node[0] * board_size)
 
     def opponent_policy(self, state, *_):
         return self.act(state, opponent=True)
