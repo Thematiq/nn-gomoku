@@ -42,8 +42,8 @@ if __name__ == '__main__':
 
     # agent = DQN(board_size=15, seed=args.seed)
     agent = MCTSAgent(samples_limit=5)
-    opponent = MCTSAgent(samples_limit=50)
-    # opponent = RandomAgent(123)
+    # opponent = MCTSAgent(samples_limit=50)
+    opponent = RandomAgent(123)
 
     env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
     env.reset(seed=args.seed)

@@ -189,8 +189,8 @@ class MCTSAgent(Agent):
             board = state.board.encode().flatten()
         else:
             board = state.flatten()
-        self._root = MCTSNode(None, 1.0)
         pos = self.__play(board, opponent)
+        self.__update(pos)
         return pos
 
     def opponent_policy(self, state: np.ndarray, *_) -> int:
