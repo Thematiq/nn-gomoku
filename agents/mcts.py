@@ -5,7 +5,8 @@ import numpy as np
 
 from tqdm import trange
 from typing import Tuple, List, Dict, Optional, Callable
-from gym_gomoku.envs.util import GomokuUtil
+from evaluation.convolution_evaluation import ConvolutionEvaluation
+from evaluation.filters import create_check_final_filter
 
 from .agent import Agent
 
@@ -27,7 +28,8 @@ def get_available_positions(board: Board) -> np.ndarray:
 
 def default_expand_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
-    return zip(positions, np.ones_like(positions) / positions.shape)
+    prob = np.random.uniform(0, 1, size=positions.shape)
+    return zip(positions,  prob / np.linalg.norm(prob))
 
 
 def default_rollout_policy(board: Board) -> AvailableActions:
@@ -105,23 +107,19 @@ class MCTSAgent(Agent):
         self._samples_limit = samples_limit
         self._silent_mode = silent
         self._expand_bound = min(samples_limit, expand_bound)
-        self._util = GomokuUtil()
+        self._eval = ConvolutionEvaluation(*create_check_final_filter())
+
 
     def __check_terminal(self, board, is_player_opponent):
         board = board.reshape(self._board_size, self._board_size)
-        terminal, winner = self._util.check_five_in_row(board)
-        if not terminal:
-            return None
+        status = self._eval.evaluate(board, '')
+        if np.isinf(status):
+            if (status < 0) == is_player_opponent:
+                return np.inf
+            else:
+                return -1 * np.inf
 
-        is_winner_opponent = (winner == 'white')
-
-        if is_winner_opponent == is_player_opponent:
-            return 1
-        elif winner == 'empty':
-            return 0
-        else:
-            return -1
-
+        return None
 
     def __eval_rollout(self, board: Board, opponent) -> float:
         player = opponent
@@ -131,7 +129,9 @@ class MCTSAgent(Agent):
             state = self.__check_terminal(board, player)
             if state is not None:
                 return state
-            action_probs = self._rollout_policy(board)
+            action_probs = list(self._rollout_policy(board))
+            if len(action_probs) == 0:
+                return 0
             next_action = max(action_probs, key=lambda x: x[1])[0]
             board[next_action] = -1 if opponent else 1
             opponent = not opponent
@@ -185,6 +185,8 @@ class MCTSAgent(Agent):
         self.__update(action)
 
     def act(self, state: np.ndarray, is_training=True, opponent=False) -> int:
+        if opponent:
+            self._root = MCTSNode(None, 1.0)
         if not isinstance(state, np.ndarray):
             board = state.board.encode().flatten()
         else:

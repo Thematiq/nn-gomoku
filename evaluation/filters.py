@@ -2,6 +2,7 @@ import torch
 import numpy as np
 
 from enum import Enum
+from typing import Tuple
 
 
 class Position(Enum):
@@ -9,6 +10,15 @@ class Position(Enum):
     VERTICAL = 1
     LEFT_SIDED_DIAGONAL = 2
     RIGHT_SIDED_DIAGONAL = 3
+
+
+def create_check_final_filter() -> Tuple[torch.Tensor, torch.Tensor]:
+    return torch.cat([
+        create_filter(5, 5, Position.HORIZONTAL),
+        create_filter(5, 5, Position.VERTICAL),
+        create_filter(5, 5, Position.LEFT_SIDED_DIAGONAL),
+        create_filter(5, 5, Position.RIGHT_SIDED_DIAGONAL)
+    ]), torch.tensor([[[5.]], [[5.]], [[5.]], [[5.]]])
 
 
 def create_filter(size: int, n: int, position: Position) -> torch.Tensor:
