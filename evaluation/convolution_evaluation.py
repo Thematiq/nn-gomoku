@@ -23,23 +23,14 @@ class ConvolutionEvaluation(Evaluation):
         self.mask_values: torch.Tensor = mask_values
 
     def evaluate(self, state, player) -> float:
-        state = self.to_state_tensor(state)
+        state = torch.tensor(state, dtype=torch.float32)
+        state = state.view(1, 1, state.shape[0], state.shape[1])
 
         x = F.conv2d(state, self.filters, padding='same')
-        x = torch.where(torch.abs(x) >= self.mask_values, x, 0)
+        x[torch.abs(x) < self.mask_values] = 0.
 
         # checking for infinity
         x[x >= 5] = torch.inf
         x[x <= -5] = -1*torch.inf
 
         return float(torch.sum(x))
-
-    def to_state_tensor(self, state) -> torch.Tensor:
-        """
-        Helper function to convert state from 0, 1, 2 to 0, 1, -1
-        :param state: Current game state
-        :return: Modified state
-        """
-        tensor_state = torch.tensor(state)
-        tensor_state = tensor_state.to(torch.float32)
-        return torch.reshape(tensor_state, (1, 1, tensor_state.shape[0], tensor_state.shape[1]))
