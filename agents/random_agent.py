@@ -10,7 +10,7 @@ class RandomAgent(Agent):
     def update(self, *_) -> None:
         pass
 
-    def act(self, state: np.ndarray, *_) -> int:
+    def act(self, state: np.ndarray, *args, **kwargs) -> int:
         if isinstance(state, np.ndarray):
             state = state.reshape(-1)
         else:
