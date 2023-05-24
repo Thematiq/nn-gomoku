@@ -92,6 +92,9 @@ class MCTSNode:
     def make_root(self):
         self._parent = None
 
+    def __repr__(self):
+        return f"Visits: {self.visits} prob: {self.q_val}"
+
 
 class MCTSAgent(Agent):
     def __init__(self, expand_policy: ExpandPolicy = default_expand_policy,
@@ -112,13 +115,12 @@ class MCTSAgent(Agent):
 
     def __check_terminal(self, board, is_player_opponent):
         board = board.reshape(self._board_size, self._board_size)
-        status = self._eval.evaluate(board, '')
+        status = self._eval.evaluate(board, -1 if is_player_opponent else 1)
         if np.isinf(status):
             if (status < 0) == is_player_opponent:
-                return np.inf
+                return 1
             else:
-                return -1 * np.inf
-
+                return -1
         return None
 
     def __eval_rollout(self, board: Board, opponent) -> float:
