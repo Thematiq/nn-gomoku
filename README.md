@@ -2,21 +2,7 @@
 
 ## Installation
 
-1. Clone forked repository with Gym environment:
-
-```bash
-cd $PROJECT_DIR
-git clone git@github.com:m-wojnar/gym-gomoku.git
-```
-
-2. Install Gym environment (`-e` flag is for editable mode):
-
-```bash
-cd gym-gomoku
-pip install -e .
-```
-
-3. Clone this repository:
+1. Clone this repository:
 
 ```bash
 cd $PROJECT_DIR
@@ -24,7 +10,7 @@ git clone git@github.com:Thematiq/nn-gomoku.git
 cd nn-gomoku
 ```
 
-4. Install dependencies:
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -51,8 +37,7 @@ This line creates an instance of an opponent agent. **Attention!** The opponent 
 to play. You can use the static `load` method to restore the agent's state from the file.
 
 ```python 
-env = gym.make('Gomoku15x15-v0', opponent=opponent.opponent_policy, render=not args.no_render)
-env.reset(seed=args.seed)
+env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.board_size, render=args.render)
 ```
 
 This code creates an instance of the Gym environment. The `opponent_policy` method is a method of the opponent agent
@@ -61,8 +46,8 @@ which returns the next move of the opponent. The `render` flag determines whethe
 The `run` method is used to play the game and return boolean value which indicates whether the agent won or not.
 
 ```python
-prev_state = np.zeros_like(env.observation_space.shape)
-action = env.action_space.sample()
+prev_state, _ = env.reset(seed=args.seed)
+action = agent.act(prev_state)
 ```
 
 The initial state of the environment is a zero matrix which represents an empty board. The `action_space.sample()` 
@@ -70,7 +55,7 @@ method returns a first random action which is an integer in the range `[0, board
 
 ```python
 while not terminal:
-    state, reward, terminal, info = env.step(action)
+    state, reward, terminal, _, info = env.step(action)
     agent.update(prev_state, action, reward, state, terminal)
     action = agent.act(state)
     prev_state = state
@@ -80,12 +65,6 @@ The agent-environment interaction is performed in the `while` loop. The `env.ste
 in the environment. The `update` method is used to update the agent's state and the `act` method is used to get the next 
 action. **Attention!** If you want to use `run` method to evaluate the agent, you must comment out or delete the line
 in which the `update` method is called.
-
-```python
-GomokuUtil().check_five_in_row(state)[1] == 'black'
-```
-
-Finally, the `check_five_in_row` method is used to check whether the agent won the game or not.
 
 ### Agent implementation
 
