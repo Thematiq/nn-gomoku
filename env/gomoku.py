@@ -6,16 +6,6 @@ import numpy as np
 from evaluation import *
 
 
-import torch
-def create_check_final_filter() -> Tuple[torch.Tensor, torch.Tensor]:
-    return torch.cat([
-        create_filter(5, 5, Position.HORIZONTAL),
-        create_filter(5, 5, Position.VERTICAL),
-        create_filter(5, 5, Position.LEFT_SIDED_DIAGONAL),
-        create_filter(5, 5, Position.RIGHT_SIDED_DIAGONAL)
-    ]), torch.tensor([[[5.]], [[5.]], [[5.]], [[5.]]])
-
-
 class GomokuEnv(gym.Env):
     END_REWARD = 100.
 
