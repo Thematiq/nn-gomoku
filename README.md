@@ -43,15 +43,16 @@ env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.b
 This code creates an instance of the Gym environment. The `opponent_policy` method is a method of the opponent agent
 which returns the next move of the opponent. The `render` flag determines whether the game should be rendered or not.
 
-The `run` method is used to play the game and return boolean value which indicates whether the agent won or not.
+The `run` method is used to play the game and returns game information that contains the moves of both players and the
+result of the game.
 
 ```python
 prev_state, _ = env.reset(seed=args.seed)
 action = agent.act(prev_state)
 ```
 
-The initial state of the environment is a zero matrix which represents an empty board. The `action_space.sample()` 
-method returns a first random action which is an integer in the range `[0, board_size ** 2)`.
+The initial state of the environment can be obtained by calling the `reset` method. The `seed` parameter is used to set
+the random seed. The `act` method is used to get the first action of the agent.
 
 ```python
 while not terminal:

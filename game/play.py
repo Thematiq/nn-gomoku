@@ -36,4 +36,4 @@ if __name__ == '__main__':
     env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.board_size, render=args.render)
 
     result = run(env, agent, args.seed)
-    print(f'{result["winner"]} won in {len(result["moves"])} moves')
+    print(f'{"Agent" if result["winner"] == 1 else "Opponent"} won in {len(result["moves"])} moves')

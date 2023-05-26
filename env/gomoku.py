@@ -41,34 +41,33 @@ class GomokuEnv(gym.Env):
         self._board = np.zeros((self._board_size, self._board_size), dtype=np.float32)
         self.moves = []
 
-        return self._board, {}
+        return self._board, {'moves': self.moves, 'winner': 0}
+
+    def _make_move(self, action: int, player: int) -> float:
+        self._board[action // self._board_size, action % self._board_size] = player
+        self.moves.append((action, player))
+
+        if self._render:
+            self.render(player)
+
+        return self.evaluator.evaluate(self._board, None)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
-        self._board[action // self._board_size, action % self._board_size] = 1
-        self.moves.append((action, 1))
-
-        if self.evaluator.evaluate(self._board, None) == np.inf:
-            self.render(last=True)
-            return self._board, self.END_REWARD, True, False, {'moves': self.moves, 'winner': 'Agent'}
+        if self._make_move(action, 1) == np.inf:
+            return self._board, self.END_REWARD, True, False, {'moves': self.moves, 'winner': 1}
 
         opponent_action = self._opponent(self._board)
-        self._board[opponent_action // self._board_size, opponent_action % self._board_size] = -1
-        self.moves.append((opponent_action, -1))
 
-        if (value := self.evaluator.evaluate(self._board, None)) == -np.inf:
-            self.render(last=True)
-            return self._board, -self.END_REWARD, True, False, {'moves': self.moves, 'winner': 'Opponent'}
+        if (value := self._make_move(opponent_action, -1)) == -np.inf:
+            return self._board, -self.END_REWARD, True, False, {'moves': self.moves, 'winner': -1}
 
-        self.render(last=False)
-        return self._board, value, False, False, {}
+        return self._board, value, False, False, {'moves': self.moves, 'winner': 0}
 
-    def render(self, last: bool) -> None:
-        if not self._render:
-            return
-
+    def render(self, player: int) -> None:
+        print(f'To play: {"agent" if player == 1 else "opponent"}')
         print(f'Move: {len(self.moves)}')
 
-        last_move = self.moves[-1 if last else -2][0]
+        last_move = self.moves[-1][0]
         last_move_x, last_move_y = last_move // self._board_size, last_move % self._board_size
 
         columns = '     ' + ' '.join([chr(ord('A') + i) for i in range(self._board_size)])
