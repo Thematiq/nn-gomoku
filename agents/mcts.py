@@ -87,7 +87,7 @@ class MCTSNode:
         self.update(bp_val)
         if self._parent is not None:
             # swap players
-            self._parent.update(-bp_val)
+            self._parent.backpropagation(-bp_val)
 
     def make_root(self):
         self._parent = None
@@ -158,7 +158,6 @@ class MCTSAgent(Agent):
             node.expand(actions)
 
         bp_val = self.__eval_rollout(board, opponent)
-        # print(f'bp_val = {bp_val}, rollout board: \n {board.reshape(15, 15)}')
         node.backpropagation(bp_val)
 
     def __play(self, board, opponent) -> ActionPos:
