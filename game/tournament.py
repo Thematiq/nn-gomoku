@@ -3,12 +3,11 @@ from typing import Dict, List
 
 import numpy as np
 import gymnasium as gym
-import gym_gomoku
-import torch
-from gym_gomoku.envs.util import GomokuUtil
 from tqdm import trange
 
 from agents import *
+import env
+
 
 gym.logger.set_level(40)
 
@@ -36,10 +35,12 @@ class Player:
         self.num_wins = 0
         self.num_games = 0
         self.num_tournaments = 0
+        self.is_opponent = False
 
         self.c = c
 
     def __call__(self, state: np.ndarray, *_) -> int:
+        state = state if not self.is_opponent else -state
         return self.agent.act(state, is_training=False)
 
     def __str__(self) -> str:
@@ -130,17 +131,19 @@ class Tournament:
         self.populations.append(population)
 
     def _play_game(self, player1: Player, player2: Player) -> bool:
-        env = gym.make(f'Gomoku{self.board_size}x{self.board_size}-v0', opponent=player2)
-        env.reset()
+        player1.is_opponent, player2.is_opponent = False, True
+        env = gym.make('Gomoku-v1', opponent=player2, board_size=self.board_size, render=False)
 
-        action = np.random.choice(env.action_space.n)
+        state, _ = env.reset()
+        action = player1(state)
         terminal = False
 
         while not terminal:
-            state, _, terminal, _ = env.step(action)
+            state, _, terminal, _, info = env.step(action)
             action = player1(state)
 
-        return GomokuUtil().check_five_in_row(state)[1] == 'black'
+        player1.is_opponent, player2.is_opponent = False, False
+        return info['winner'] == 1
 
     def run(self) -> None:
         for tournaments in trange(self.tournaments_num):
