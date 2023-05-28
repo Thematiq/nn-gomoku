@@ -1,8 +1,6 @@
 import numba
 import numpy as np
 
-from gym_gomoku.envs.gomoku import GomokuState
-
 from agents.agent import Agent
 from evaluation.evaluation import Evaluation
 from evaluation.convolution_evaluation import ConvolutionEvaluation
@@ -93,7 +91,7 @@ class AlphaBetaAgent(Agent):
         else:
             return self._minimize(board, depth, alpha, beta, opponent)
 
-    def act(self, state: GomokuState, opponent=False):
+    def act(self, state: np.ndarray, opponent=False):
         if not isinstance(state, np.ndarray):
             board = state.board.encode()
         else:
