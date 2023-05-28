@@ -2,27 +2,26 @@ import numba
 import numpy as np
 
 from gym_gomoku.envs.gomoku import GomokuState
-from gym_gomoku.envs.util import GomokuUtil
 
 from agents.agent import Agent
 from evaluation.evaluation import Evaluation
+from evaluation.convolution_evaluation import ConvolutionEvaluation
+from evaluation.filters import create_check_final_filter
 
 
 class AlphaBetaAgent(Agent):
     def __init__(self, depth: int, evaluator: Evaluation):
         self._eval = evaluator
         self._d = depth
-        self._util = GomokuUtil()
+        self._eval = ConvolutionEvaluation(*create_check_final_filter())
 
     def update(self, state, action, reward, next_state, terminal):
         pass
 
     def _check_terminal(self, board, opponent):
-        terminal, winner = self._util.check_five_in_row(board)
-        is_winner_opponent = winner == 'white'
-
-        if terminal:
-            if is_winner_opponent and opponent:
+        status = self._eval.evaluate(board, '')
+        if np.isinf(status):
+            if (status < 0) == opponent:
                 return np.inf
             else:
                 return -1 * np.inf
