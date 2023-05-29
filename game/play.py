@@ -30,7 +30,7 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    agent = RandomAgent(123)
+    agent = MCTSAgent(samples_limit=1000, board_size=9)
     opponent = RandomAgent(321)
 
     env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.board_size, render=args.render)
