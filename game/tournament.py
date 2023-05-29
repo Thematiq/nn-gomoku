@@ -135,12 +135,11 @@ class Tournament:
         env = gym.make('Gomoku-v1', opponent=player2, board_size=self.board_size, render=False)
 
         state, _ = env.reset()
-        action = player1(state)
         terminal = False
 
         while not terminal:
-            state, _, terminal, _, info = env.step(action)
             action = player1(state)
+            state, _, terminal, _, info = env.step(action)
 
         player1.is_opponent, player2.is_opponent = False, False
         return info['winner'] == 1

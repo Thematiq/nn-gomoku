@@ -9,13 +9,12 @@ from agents import *
 
 def run(env: gym.Env, agent: Agent, seed: int) -> Dict:
     prev_state, _ = env.reset(seed=seed)
-    action = agent.act(prev_state)
     terminal = False
 
     while not terminal:
+        action = agent.act(prev_state)
         state, reward, terminal, _, info = env.step(action)
         agent.update(prev_state, action, reward, state, terminal)
-        action = agent.act(state)
         prev_state = state
 
     return info
