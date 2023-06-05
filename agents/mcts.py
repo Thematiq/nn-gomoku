@@ -41,12 +41,13 @@ def softmax(prob):
 
 def default_expand_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
-    prob = np.random.uniform(0, 1, size=positions.shape)
+    prob = np.ones(positions.shape)
     return zip(positions,  softmax(prob))
 
 
 def default_rollout_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
+    #print("Positions:", positions)
     return zip(positions, np.random.uniform(0, 1, size=positions.shape))
 
 
@@ -127,15 +128,16 @@ class MCTSAgent(Agent):
         self._eval = evaluator
         self._epsilon = epsilon
 
-
     def __check_terminal(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
         status = self._eval.evaluate(board, -1 if is_player_opponent else 1)
+        #return status
+        #print(status)
         if np.isinf(status):
             if (status < 0) == is_player_opponent:
-                return 1
+                return 10_000
             else:
-                return -1
+                return -10_000
         return None
 
     def __eval(self, board: Board, is_player_opponent: bool) -> float:
@@ -143,11 +145,17 @@ class MCTSAgent(Agent):
         mult = -1 if is_player_opponent else 1
         status = self._eval.evaluate(board, -1 if is_player_opponent else 1) * mult
         status -= self._base_status
-        if status > self._epsilon:
-            return 1
-        elif status < -self._epsilon:
-            return -1
-        return 0
+        if np.isinf(status):
+            if (status < 0) == is_player_opponent:
+                return 10_000
+            else:
+                return -10_000
+        return status
+        # if status > self._epsilon:
+        #     return 10_000
+        # elif status < -self._epsilon:
+        #     return -10_000
+        # return 0
 
     def __eval_rollout(self, board: Board, opponent: bool) -> float:
         player = opponent
@@ -176,6 +184,7 @@ class MCTSAgent(Agent):
             opponent = not opponent
 
         actions = self._expand_policy(board)
+        #print(actions)
         state = self.__check_terminal(board, opponent)
 
         if state is None and node.visits >= self._expand_bound:
@@ -197,9 +206,13 @@ class MCTSAgent(Agent):
         for _ in it:
             board_copy = board.copy()
             self.__playout(board_copy, opponent)
-
+        print(self._root.children.items())
+        print(max(self._root.children.items(),
+                   key=lambda x: x[1].visits))
+        print(max(self._root.children.items(),
+                   key=lambda x: x[1].q_val))
         return max(self._root.children.items(),
-                   key=lambda x: x[1].visits)[0]
+                   key=lambda x: x[1].q_val)[0]
 
     def __update(self, last_move: ActionPos) -> None:
         if last_move in self._root.children:

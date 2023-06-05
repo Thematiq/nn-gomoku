@@ -18,7 +18,7 @@ def create_check_final_filter() -> Tuple[torch.Tensor, torch.Tensor]:
         create_filter(5, 5, Position.VERTICAL),
         create_filter(5, 5, Position.LEFT_SIDED_DIAGONAL),
         create_filter(5, 5, Position.RIGHT_SIDED_DIAGONAL)
-    ]), torch.tensor([[[1.]], [[1.]], [[1.]], [[1.]]])
+    ]), torch.tensor([[[2.]], [[2.]], [[2.]], [[2.]]])
 
 
 def create_filter(size: int, n: int, position: Position) -> torch.Tensor:

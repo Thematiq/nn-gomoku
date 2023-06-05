@@ -19,18 +19,23 @@ class AlphaBetaAgent(Agent):
     def _check_terminal(self, board, opponent):
         status = self._eval.evaluate(board, '')
         if np.isinf(status):
-            if (status < 0) == opponent:
-                return np.inf
+            print(opponent, board, opponent)
+            if (status > 0):
+                return 10_000
             else:
-                return -1 * np.inf
+                return -10_000
 
         return None
 
     def _eval_state(self, board, opponent):
-        player = 'white' if opponent else 'black'
+        #print(opponent)
+        player = 1 if opponent else 0
         evaluation = self._eval.evaluate(board, player)
-        if opponent:
-            return -1 * evaluation
+        if np.isinf(evaluation):
+            if (evaluation > 0):
+                return 10_000
+            else:
+                return -10_000
         return evaluation
 
     @numba.jit(forceobj=True)
@@ -102,6 +107,7 @@ class AlphaBetaAgent(Agent):
 
         node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
         # flatten the result
+        print(node, val)
         return node[1] + (node[0] * board_size)
 
     def opponent_policy(self, state, *_):
