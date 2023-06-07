@@ -2,40 +2,33 @@ import numba
 import numpy as np
 
 from agents.agent import Agent
-from evaluation.evaluation import Evaluation
-from evaluation.convolution_evaluation import ConvolutionEvaluation
-from evaluation.filters import create_check_final_filter
+from evaluation.evaluation import Evaluation, MAX_EVALUATION
 
 
 class AlphaBetaAgent(Agent):
     def __init__(self, depth: int, evaluator: Evaluation):
         self._eval = evaluator
         self._d = depth
-        self._eval = ConvolutionEvaluation(*create_check_final_filter())
 
     def update(self, state, action, reward, next_state, terminal):
         pass
 
     def _check_terminal(self, board, opponent):
-        status = self._eval.evaluate(board, '')
+        status = self._eval.evaluate(board, opponent)
         if np.isinf(status):
-            print(opponent, board, opponent)
-            if (status > 0):
-                return 10_000
+            if status > 0 and not opponent:
+                return MAX_EVALUATION
             else:
-                return -10_000
-
+                return -MAX_EVALUATION
         return None
 
     def _eval_state(self, board, opponent):
-        #print(opponent)
-        player = 1 if opponent else 0
-        evaluation = self._eval.evaluate(board, player)
+        evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
-            if (evaluation > 0):
-                return 10_000
+            if evaluation > 0 and not opponent:
+                return MAX_EVALUATION
             else:
-                return -10_000
+                return -MAX_EVALUATION
         return evaluation
 
     @numba.jit(forceobj=True)
@@ -47,7 +40,7 @@ class AlphaBetaAgent(Agent):
             current_pos = tuple(current_pos)
 
             board[current_pos] = move_sign
-            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, not opponent, False)
+            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, opponent, False)
             board[current_pos] = 0
 
             if current_val > best_val:
@@ -69,7 +62,7 @@ class AlphaBetaAgent(Agent):
             current_pos = tuple(current_pos)
 
             board[current_pos] = move_sign
-            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, not opponent, True)
+            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, opponent, True)
             board[current_pos] = 0
 
             if current_val < best_val:
@@ -101,13 +94,11 @@ class AlphaBetaAgent(Agent):
             board = state.board.encode()
         else:
             board = state
-
         board = board.astype(np.int32)
         board_size = board.shape[0]
 
-        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
+        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, not opponent)
         # flatten the result
-        print(node, val)
         return node[1] + (node[0] * board_size)
 
     def opponent_policy(self, state, *_):
