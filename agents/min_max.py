@@ -14,22 +14,25 @@ class AlphaBetaAgent(Agent):
         pass
 
     def _check_terminal(self, board, opponent):
-        status = self._eval.evaluate(board, opponent)
-        if np.isinf(status):
-            if status > 0 and not opponent:
-                return MAX_EVALUATION
+        sign = 1 if opponent else -1
+        evaluation = self._eval.evaluate(board, opponent)
+        if np.isinf(evaluation):
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
             else:
-                return -MAX_EVALUATION
+                evaluation = -MAX_EVALUATION
+            return sign * evaluation
         return None
 
     def _eval_state(self, board, opponent):
+        sign = 1 if opponent else -1
         evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
-            if evaluation > 0 and not opponent:
-                return MAX_EVALUATION
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
             else:
-                return -MAX_EVALUATION
-        return evaluation
+                evaluation = -MAX_EVALUATION
+        return sign*evaluation
 
     @numba.jit(forceobj=True)
     def _maximize(self, board, depth, alpha, beta, opponent):
@@ -40,7 +43,7 @@ class AlphaBetaAgent(Agent):
             current_pos = tuple(current_pos)
 
             board[current_pos] = move_sign
-            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, opponent, False)
+            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, not opponent, False)
             board[current_pos] = 0
 
             if current_val > best_val:
@@ -62,7 +65,7 @@ class AlphaBetaAgent(Agent):
             current_pos = tuple(current_pos)
 
             board[current_pos] = move_sign
-            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, opponent, True)
+            _, current_val = self._alpha_beta(board, depth - 1, alpha, beta, not opponent, True)
             board[current_pos] = 0
 
             if current_val < best_val:
@@ -97,7 +100,7 @@ class AlphaBetaAgent(Agent):
         board = board.astype(np.int32)
         board_size = board.shape[0]
 
-        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, not opponent)
+        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
         # flatten the result
         return node[1] + (node[0] * board_size)
 
