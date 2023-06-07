@@ -5,11 +5,13 @@ import gymnasium as gym
 
 import env
 from agents import *
+from evaluation import ConvolutionEvaluation, create_check_final_filter
 
 
 def run(env: gym.Env, agent: Agent, seed: int) -> Dict:
     prev_state, _ = env.reset(seed=seed)
     terminal = False
+    info = None
 
     while not terminal:
         action = agent.act(prev_state)
@@ -29,7 +31,8 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
-    agent = MCTSAgent(samples_limit=1000, board_size=9)
+    #agent = MCTSAgent(samples_limit=1_000, board_size=args.board_size, rollout_bound=6, confidence=0., silent=False)
+    agent = AlphaBetaAgent(depth=1, evaluator=ConvolutionEvaluation(*create_check_final_filter()))
     opponent = RandomAgent(321)
 
     env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.board_size, render=args.render)

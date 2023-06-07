@@ -27,10 +27,12 @@ class ConvolutionEvaluation(Evaluation):
         state = state.view(1, 1, state.shape[0], state.shape[1])
 
         x = F.conv2d(state, self.filters, padding='same')
-        x[torch.abs(x) < self.mask_values] = 0.
+        x[torch.abs(x) <= self.mask_values] = 0.
 
         # checking for infinity
         x[x >= 5] = torch.inf
         x[x <= -5] = -1*torch.inf
+
+        x *= x*x
 
         return float(torch.sum(x))

@@ -16,20 +16,20 @@ from evaluation import create_filter, Position, ConvolutionEvaluation
                                                                    [0, 0, 1, 0, 0],
                                                                    [0, 0, 0, 1, 0],
                                                                    [0, 0, 0, 0, 1]]), 0),
-                                                        (np.array([[0, 0, 0, 0, 2],
-                                                                   [0, 0, 0, 0, 2],
-                                                                   [0, 0, 0, 0, 2],
-                                                                   [0, 0, 0, 0, 2],
-                                                                   [0, 0, 0, 0, 2]]), -1 * math.inf),
+                                                        (np.array([[0, 0, 0, 0, -1],
+                                                                   [0, 0, 0, 0, -1],
+                                                                   [0, 0, 0, 0, -1],
+                                                                   [0, 0, 0, 0, -1],
+                                                                   [0, 0, 0, 0, -1]]), -1 * math.inf),
                                                         (np.array([[0, 0, 0, 0, 0],
                                                                    [0, 1, 0, 0, 0],
                                                                    [0, 1, 0, 0, 0],
                                                                    [0, 1, 0, 0, 0],
-                                                                   [0, 1, 0, 0, 0]]), 6)])
+                                                                   [0, 1, 0, 0, 0]]), 54.0)])
 def test_evaluation(state, expected_evaluation):
     filters = torch.concatenate([create_filter(5, 5, Position.VERTICAL),
                                  create_filter(5, 3, Position.VERTICAL)])
 
-    evaluator = ConvolutionEvaluation(filters, torch.tensor([[[5.]], [[3.]]]))
+    evaluator = ConvolutionEvaluation(filters, torch.tensor([[[4.]], [[2.]]]))
     evaluation = evaluator.evaluate(state, None)
     assert evaluation == expected_evaluation

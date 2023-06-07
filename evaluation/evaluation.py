@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from random import random
+
+
+MAX_EVALUATION = 1_000_000
 
 
 class Evaluation(ABC):

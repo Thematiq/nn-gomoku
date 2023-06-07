@@ -5,6 +5,7 @@ import numpy as np
 
 from tqdm import trange
 from typing import Tuple, List, Dict, Optional, Callable
+from evaluation import Evaluation
 from evaluation.convolution_evaluation import ConvolutionEvaluation
 from evaluation.filters import create_check_final_filter
 
@@ -26,10 +27,22 @@ def get_available_positions(board: Board) -> np.ndarray:
     return np.argwhere(board == 0).flatten()
 
 
+def create_default_eval():
+    return ConvolutionEvaluation(*create_check_final_filter())
+
+
+def softmax(prob):
+    if prob.shape[0] == 0:
+        return prob
+    prob_norm = prob - np.max(prob)
+    prob_exp = np.exp(prob_norm)
+    return prob_exp / np.sum(prob_exp)
+
+
 def default_expand_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
     prob = np.random.uniform(0, 1, size=positions.shape)
-    return zip(positions,  prob / np.linalg.norm(prob))
+    return zip(positions,  softmax(prob))
 
 
 def default_rollout_policy(board: Board) -> AvailableActions:
@@ -80,7 +93,7 @@ class MCTSNode:
         self._q = (bp_val - self._q) / self.visits
 
     def eval(self, confidence):
-        self._u = self._p * np.sqrt(self._parent.visits / (1 + self.visits))
+        self._u = self._p * np.sqrt(np.log(self._parent.visits) / (1 + self.visits))
         return self._q + confidence * self._u
 
     def backpropagation(self, bp_val):
@@ -100,6 +113,7 @@ class MCTSAgent(Agent):
     def __init__(self, expand_policy: ExpandPolicy = default_expand_policy,
                  rollout_policy: RolloutPolicy = default_rollout_policy,
                  confidence: float = 1.41, samples_limit: int = 10_000, expand_bound: int = 1,
+                 evaluator: Evaluation = create_default_eval(), epsilon: float = 1e-5,
                  board_size: int = 15, rollout_bound: int = 1_000, silent: bool = True):
         self._root = MCTSNode(None, 1.0)
         self._expand_policy = expand_policy
@@ -110,10 +124,10 @@ class MCTSAgent(Agent):
         self._samples_limit = samples_limit
         self._silent_mode = silent
         self._expand_bound = min(samples_limit, expand_bound)
-        self._eval = ConvolutionEvaluation(*create_check_final_filter())
+        self._eval = evaluator
+        self._epsilon = epsilon
 
-
-    def __check_terminal(self, board, is_player_opponent):
+    def __check_terminal(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
         status = self._eval.evaluate(board, -1 if is_player_opponent else 1)
         if np.isinf(status):
@@ -123,7 +137,18 @@ class MCTSAgent(Agent):
                 return -1
         return None
 
-    def __eval_rollout(self, board: Board, opponent) -> float:
+    def __eval(self, board: Board, is_player_opponent: bool) -> float:
+        board = board.reshape(self._board_size, self._board_size)
+        mult = -1 if is_player_opponent else 1
+        status = self._eval.evaluate(board, -1 if is_player_opponent else 1) * mult
+        status -= self._base_status
+        if status > self._epsilon:
+            return 1
+        elif status < -self._epsilon:
+            return -1
+        return 0
+
+    def __eval_rollout(self, board: Board, opponent: bool) -> float:
         player = opponent
 
         for _ in range(self._rollout_bound):
@@ -137,9 +162,7 @@ class MCTSAgent(Agent):
             next_action = max(action_probs, key=lambda x: x[1])[0]
             board[next_action] = -1 if opponent else 1
             opponent = not opponent
-        else:
-            # lmao never used for-else
-            log.warning(f"Rollout exceeded the limit of {self._rollout_bound}")
+        return self.__eval(board, player)
 
     def __playout(self, board: Board, opponent: bool) -> None:
         node = self._root
@@ -166,11 +189,13 @@ class MCTSAgent(Agent):
             return board.shape[0] // 2
 
         it = range(self._samples_limit) if self._silent_mode else trange(self._samples_limit)
+        board_2d = board.reshape(self._board_size, -1)
+        mult = -1 if opponent else 1
+        self._base_status = self._eval.evaluate(board_2d, opponent) * mult
 
         for _ in it:
             board_copy = board.copy()
             self.__playout(board_copy, opponent)
-
         return max(self._root.children.items(),
                    key=lambda x: x[1].visits)[0]
 

@@ -2,36 +2,37 @@ import numba
 import numpy as np
 
 from agents.agent import Agent
-from evaluation.evaluation import Evaluation
-from evaluation.convolution_evaluation import ConvolutionEvaluation
-from evaluation.filters import create_check_final_filter
+from evaluation.evaluation import Evaluation, MAX_EVALUATION
 
 
 class AlphaBetaAgent(Agent):
     def __init__(self, depth: int, evaluator: Evaluation):
         self._eval = evaluator
         self._d = depth
-        self._eval = ConvolutionEvaluation(*create_check_final_filter())
 
     def update(self, state, action, reward, next_state, terminal):
         pass
 
     def _check_terminal(self, board, opponent):
-        status = self._eval.evaluate(board, '')
-        if np.isinf(status):
-            if (status < 0) == opponent:
-                return np.inf
+        sign = 1 if opponent else -1
+        evaluation = self._eval.evaluate(board, opponent)
+        if np.isinf(evaluation):
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
             else:
-                return -1 * np.inf
-
+                evaluation = -MAX_EVALUATION
+            return sign * evaluation
         return None
 
     def _eval_state(self, board, opponent):
-        player = 'white' if opponent else 'black'
-        evaluation = self._eval.evaluate(board, player)
-        if opponent:
-            return -1 * evaluation
-        return evaluation
+        sign = 1 if opponent else -1
+        evaluation = self._eval.evaluate(board, opponent)
+        if np.isinf(evaluation):
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
+            else:
+                evaluation = -MAX_EVALUATION
+        return sign*evaluation
 
     @numba.jit(forceobj=True)
     def _maximize(self, board, depth, alpha, beta, opponent):
@@ -96,7 +97,6 @@ class AlphaBetaAgent(Agent):
             board = state.board.encode()
         else:
             board = state
-
         board = board.astype(np.int32)
         board_size = board.shape[0]
 
