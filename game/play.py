@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     args = ArgumentParser()
     args.add_argument('--board_size', type=int, default=9)
-    args.add_argument('--render', action='store_true', default=True)
+    args.add_argument('--render', action='store_true', default=False)
     args.add_argument('--seed', type=int, default=42)
     args = args.parse_args()
 
