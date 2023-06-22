@@ -39,20 +39,20 @@ def sample_dqn_params(trial):
     return {
         'board_size': BOARD_SIZE,
         'seed': RANDOM_STATE,
-        'gamma': trial.suggest_float(0, 1),
-        'learning_rate': trial.suggest_float(1e-5, 1e-2),
-        'epsilon': trial.suggest_float(0, 1),
-        'epsilon_decay': trial.suggest_float(0, 1),
-        'soft_update': trial.suggest_float(0, 1),
-        'capacity': trial.suggest_int(1e2, 5e4),
-        'experience_replay_steps': trial.suggest_int(1, 10)
+        'gamma': trial.suggest_float("gamma", 0.5, 1),
+        'learning_rate': trial.suggest_float("learning_rate", 1e-5, 1e-2),
+        'epsilon': trial.suggest_float("epsilon", 0.9, 1),
+        'epsilon_decay': trial.suggest_float("epsilon_decay", 0.95, 0.9999),
+        'soft_update': trial.suggest_float("soft_update", 0.0001, 0.05),
+        'capacity': trial.suggest_int("capacity", 1e2, 5e4),
+        'experience_replay_steps': trial.suggest_int("replay_steps", 1, 10)
     }
 
 
 def objective(trial):
     params = sample_dqn_params(trial)
-    random_rounds = trial.suggest_int(5, 100)
-    minmax_rounds = trial.suggest_int(5, 50)
+    random_rounds = trial.suggest_int("random_rounds", 5, 100)
+    minmax_rounds = trial.suggest_int("minmax_rounds", 5, 50)
 
     agent = DQN(**params)
 
@@ -67,7 +67,8 @@ def objective(trial):
 study = optuna.create_study(
     storage="sqlite:///data/dqn.sqlite3",
     study_name="dqn",
-    load_if_exists=True
+    load_if_exists=True,
+    direction="maximize"
 )
 
-study.optimize(objective, n_trials=100, n_jobs=1)
+study.optimize(objective, n_trials=1_000, n_jobs=1)
