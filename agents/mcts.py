@@ -45,7 +45,7 @@ def softmax(prob):
 def default_expand_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
     prob = np.ones(positions.shape)
-    return zip(positions,  softmax(prob))
+    return zip(positions, prob)
 
 
 def default_rollout_policy(board: Board) -> AvailableActions:
@@ -88,8 +88,7 @@ class MCTSNode:
                 self._children[action] = MCTSNode(self, prob)
 
     def select(self, confidence: float) -> Tuple[ActionPos, MCTSNode]:
-        return max(self._children.items(),
-                   key=lambda x: x[1].eval(confidence))
+        return random.choice(list(self._children.items()))
 
     def update(self, bp_val):
         self._q *= self._visits
@@ -97,8 +96,7 @@ class MCTSNode:
         self._q = (self._q + bp_val) / self._visits
 
     def eval(self, confidence):
-        self._u = self._p * np.sqrt(np.log(self._parent.visits) / (1 + self.visits))
-        return self._q + confidence * self._u
+        return self._q
 
     def backpropagation(self, bp_val):
         self.update(bp_val)
@@ -137,21 +135,21 @@ class MCTSAgent(Agent):
         evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1)
         if np.isinf(evaluation):
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
             return sign * evaluation
         return None
 
     def __eval(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
         sign = -1 if is_player_opponent else 1
-        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1) * sign
+        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1) #* sign
         if np.isinf(evaluation):
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
         return sign * evaluation
 
     def __eval_rollout(self, board: Board, opponent: bool) -> float:
@@ -195,9 +193,6 @@ class MCTSAgent(Agent):
             return board.shape[0] // 2
 
         it = range(self._samples_limit) if self._silent_mode else trange(self._samples_limit)
-        board_2d = board.reshape(self._board_size, -1)
-        mult = -1 if opponent else 1
-        self._base_status = self._eval.evaluate(board_2d, opponent) * mult
 
         for _ in it:
             board_copy = board.copy()

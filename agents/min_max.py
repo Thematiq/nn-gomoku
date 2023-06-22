@@ -18,9 +18,9 @@ class AlphaBetaAgent(Agent):
         evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
             return sign * evaluation
         return None
 
@@ -28,14 +28,16 @@ class AlphaBetaAgent(Agent):
         sign = 1 if opponent else -1
         evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
+            #print("Finish the game")
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
         return sign*evaluation
 
     @numba.jit(forceobj=True)
     def _maximize(self, board, depth, alpha, beta, opponent):
+        #print("maximizing")
         move_sign = -1 if opponent else 1
         best_val = -1 * np.inf
         best_pos = np.nan
@@ -58,6 +60,7 @@ class AlphaBetaAgent(Agent):
 
     @numba.jit(forceobj=True)
     def _minimize(self, board, depth, alpha, beta, opponent):
+        #print("minimizing")
         move_sign = -1 if opponent else 1
         best_val = np.inf
         best_pos = np.nan
@@ -83,8 +86,13 @@ class AlphaBetaAgent(Agent):
         terminal = self._check_terminal(board, opponent)
 
         if terminal is not None:
+            #print("Return by terminal")
+            #print(board)
+            #print(terminal)
             return None, terminal
         if depth == 0:
+            #print("Finish")
+            #print(board, self._eval_state(board, opponent))
             return None, self._eval_state(board, opponent)
 
         if maximizing:
@@ -100,7 +108,7 @@ class AlphaBetaAgent(Agent):
         board = board.astype(np.int32)
         board_size = board.shape[0]
 
-        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
+        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, False)
         # flatten the result
         return node[1] + (node[0] * board_size)
 

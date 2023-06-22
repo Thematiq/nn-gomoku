@@ -26,13 +26,18 @@ def act_on_board(board, opponent, depth):
 
 @pytest.mark.parametrize("board, expected_result", [(first_board, 4), (second_board, 12)])
 @pytest.mark.parametrize("opponent", [True, False])
-def test_found_best_move(board, expected_result, opponent):
-    move = act_on_board(board, opponent, 1)
+@pytest.mark.parametrize("depth", [1, 2])
+def test_found_best_move(board, expected_result, opponent, depth):
+    move = act_on_board(board, opponent, depth)
     assert move == expected_result
 
 
-@pytest.mark.parametrize("board, expected_result", [(first_board, 4), (second_board, 12)])
+@pytest.mark.parametrize("board, expected_result", [(second_board, 12)])
 @pytest.mark.parametrize("opponent", [True, False])
 def test_blocking_opponent(board, expected_result, opponent):
+    if not opponent:
+        board *= -1
+    print(board)
+    print(opponent, expected_result)
     move = act_on_board(board, opponent, 2)
     assert move == expected_result
