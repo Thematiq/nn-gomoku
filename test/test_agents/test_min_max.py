@@ -37,7 +37,5 @@ def test_found_best_move(board, expected_result, opponent, depth):
 def test_blocking_opponent(board, expected_result, opponent):
     if not opponent:
         board *= -1
-    print(board)
-    print(opponent, expected_result)
     move = act_on_board(board, opponent, 2)
     assert move == expected_result

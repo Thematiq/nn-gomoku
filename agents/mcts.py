@@ -144,7 +144,7 @@ class MCTSAgent(Agent):
     def __eval(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
         sign = -1 if is_player_opponent else 1
-        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1) #* sign
+        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1)
         if np.isinf(evaluation):
             if evaluation > 0:
                 evaluation = -MAX_EVALUATION
