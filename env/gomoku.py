@@ -46,10 +46,16 @@ class GomokuEnv(gym.Env):
         if self._make_move(action, 1) == np.inf:
             return self._board, self.END_REWARD, True, False, {'moves': self.moves, 'winner': 1}
 
+        if np.count_nonzero(self._board == 0) == 0:
+            return self._board, 0, True, False, {'moves': self.moves, 'winner': 0}
+
         opponent_action = self._opponent(self._board)
 
         if (value := self._make_move(opponent_action, -1)) == -np.inf:
             return self._board, -self.END_REWARD, True, False, {'moves': self.moves, 'winner': -1}
+
+        if np.count_nonzero(self._board == 0) == 0:
+            return self._board, 0, True, False, {'moves': self.moves, 'winner': 0}
 
         return self._board, value, False, False, {'moves': self.moves, 'winner': 0}
 

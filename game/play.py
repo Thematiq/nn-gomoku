@@ -38,4 +38,13 @@ if __name__ == '__main__':
     env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=args.board_size, render=args.render)
 
     result = run(env, agent, args.seed)
-    print(f'{"Agent" if result["winner"] == 1 else "Opponent"} won in {len(result["moves"])} moves')
+    result_message = ""
+    if result["winner"] == 1:
+        result_message = "Agent won"
+    elif result["winner"] == -1:
+        result_message = "Opponent won"
+    elif result["winner"] == 0:
+        result_message = "Draw"
+    else:
+        raise ValueError(f"Unexpected winner, should be one of: [-1, 0, 1] is: {result['winner']}")
+    print(f'{result_message} in {len(result["moves"])} moves')

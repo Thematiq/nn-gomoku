@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import logging as log
+import random
+
 import numpy as np
 
 from tqdm import trange
 from typing import Tuple, List, Dict, Optional, Callable
 from evaluation import Evaluation
 from evaluation.convolution_evaluation import ConvolutionEvaluation
+from evaluation.evaluation import MAX_EVALUATION
 from evaluation.filters import create_check_final_filter
 
 from .agent import Agent
@@ -41,13 +44,13 @@ def softmax(prob):
 
 def default_expand_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
-    prob = np.random.uniform(0, 1, size=positions.shape)
+    prob = np.ones(positions.shape)
     return zip(positions,  softmax(prob))
 
 
 def default_rollout_policy(board: Board) -> AvailableActions:
     positions = get_available_positions(board)
-    return zip(positions, np.random.uniform(0, 1, size=positions.shape))
+    return zip(positions, np.ones(positions.shape))
 
 
 class MCTSNode:
@@ -89,8 +92,9 @@ class MCTSNode:
                    key=lambda x: x[1].eval(confidence))
 
     def update(self, bp_val):
+        self._q *= self._visits
         self._visits += 1
-        self._q = (bp_val - self._q) / self.visits
+        self._q = (self._q + bp_val) / self._visits
 
     def eval(self, confidence):
         self._u = self._p * np.sqrt(np.log(self._parent.visits) / (1 + self.visits))
@@ -129,24 +133,26 @@ class MCTSAgent(Agent):
 
     def __check_terminal(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
-        status = self._eval.evaluate(board, -1 if is_player_opponent else 1)
-        if np.isinf(status):
-            if (status < 0) == is_player_opponent:
-                return 1
+        sign = -1 if is_player_opponent else 1
+        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1)
+        if np.isinf(evaluation):
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
             else:
-                return -1
+                evaluation = -MAX_EVALUATION
+            return sign * evaluation
         return None
 
     def __eval(self, board: Board, is_player_opponent: bool) -> float:
         board = board.reshape(self._board_size, self._board_size)
-        mult = -1 if is_player_opponent else 1
-        status = self._eval.evaluate(board, -1 if is_player_opponent else 1) * mult
-        status -= self._base_status
-        if status > self._epsilon:
-            return 1
-        elif status < -self._epsilon:
-            return -1
-        return 0
+        sign = -1 if is_player_opponent else 1
+        evaluation = self._eval.evaluate(board, -1 if is_player_opponent else 1) * sign
+        if np.isinf(evaluation):
+            if evaluation > 0:
+                evaluation = MAX_EVALUATION
+            else:
+                evaluation = -MAX_EVALUATION
+        return sign * evaluation
 
     def __eval_rollout(self, board: Board, opponent: bool) -> float:
         player = opponent
@@ -159,7 +165,7 @@ class MCTSAgent(Agent):
             action_probs = list(self._rollout_policy(board))
             if len(action_probs) == 0:
                 return 0
-            next_action = max(action_probs, key=lambda x: x[1])[0]
+            next_action = random.choice(action_probs)[0]
             board[next_action] = -1 if opponent else 1
             opponent = not opponent
         return self.__eval(board, player)
@@ -197,7 +203,7 @@ class MCTSAgent(Agent):
             board_copy = board.copy()
             self.__playout(board_copy, opponent)
         return max(self._root.children.items(),
-                   key=lambda x: x[1].visits)[0]
+                   key=lambda x: x[1].q_val)[0]
 
     def __update(self, last_move: ActionPos) -> None:
         if last_move in self._root.children:
