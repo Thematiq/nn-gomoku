@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-MAX_EVALUATION = 1_000_000
+MAX_EVALUATION = 1_000_000_000
 
 
 class Evaluation(ABC):

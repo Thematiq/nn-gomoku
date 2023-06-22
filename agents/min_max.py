@@ -18,9 +18,9 @@ class AlphaBetaAgent(Agent):
         evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
             return sign * evaluation
         return None
 
@@ -29,9 +29,9 @@ class AlphaBetaAgent(Agent):
         evaluation = self._eval.evaluate(board, opponent)
         if np.isinf(evaluation):
             if evaluation > 0:
-                evaluation = MAX_EVALUATION
-            else:
                 evaluation = -MAX_EVALUATION
+            else:
+                evaluation = MAX_EVALUATION
         return sign*evaluation
 
     @numba.jit(forceobj=True)
@@ -100,7 +100,7 @@ class AlphaBetaAgent(Agent):
         board = board.astype(np.int32)
         board_size = board.shape[0]
 
-        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, True)
+        node, val = self._alpha_beta(board, self._d, -1 * np.inf, np.inf, opponent, False)
         # flatten the result
         return node[1] + (node[0] * board_size)
 
