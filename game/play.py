@@ -8,13 +8,13 @@ from agents import *
 from evaluation import ConvolutionEvaluation, create_check_final_filter
 
 
-def run(env: gym.Env, agent: Agent, seed: int) -> Dict:
+def run(env: gym.Env, agent: Agent, seed: int, is_training=True) -> Dict:
     prev_state, _ = env.reset(seed=seed)
     terminal = False
     info = None
 
     while not terminal:
-        action = agent.act(prev_state)
+        action = agent.act(prev_state, is_training)
         state, reward, terminal, _, info = env.step(action)
         agent.update(prev_state, action, reward, state, terminal)
         prev_state = state
