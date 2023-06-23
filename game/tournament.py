@@ -183,4 +183,4 @@ if __name__ == '__main__':
     print('Best players:')
 
     for i, player in enumerate(tournament.best_players(10), start=1):
-        print(f'{i}. [{player.num_wins / player.num_wins:.3f}] {player}')
+        print(f'{i}. [{player.num_wins / player.num_games:.3f}] {player}')
