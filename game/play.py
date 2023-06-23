@@ -8,7 +8,7 @@ from agents import *
 from evaluation import ConvolutionEvaluation, create_check_final_filter
 
 
-def run(env: gym.Env, agent: Agent, seed: int, is_training=True) -> Dict:
+def run(env: gym.Env, agent: Agent, seed: int, is_training) -> Dict:
     prev_state, _ = env.reset(seed=seed)
     terminal = False
     info = None

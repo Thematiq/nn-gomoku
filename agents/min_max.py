@@ -92,7 +92,7 @@ class AlphaBetaAgent(Agent):
         else:
             return self._minimize(board, depth, alpha, beta, opponent)
 
-    def act(self, state: np.ndarray, opponent=False):
+    def act(self, state: np.ndarray, opponent=False, is_training=False):
         if not isinstance(state, np.ndarray):
             board = state.board.encode()
         else:

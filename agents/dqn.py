@@ -151,8 +151,9 @@ class DQN(Agent):
     def save(self, path: str) -> None:
         torch.save(self.q.state_dict(), path)
 
-    def load(self, path: str) -> None:
+    def load(self, path: str):
         self.q.load_state_dict(torch.load(path))
+        return self
 
     def opponent_policy(self, state: torch.Tensor, *_) -> int:
         return self.act(-state, is_training=False)

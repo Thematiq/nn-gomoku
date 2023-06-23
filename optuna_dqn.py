@@ -17,7 +17,7 @@ EVAL_MINMAX = 10
 EVAL_MCTS = 15
 
 
-def run_series(model, opponent_type, times, is_training=False):
+def run_series(model, opponent_type, times, is_training):
     wins = 0
 
     for _ in range(times):
@@ -26,7 +26,7 @@ def run_series(model, opponent_type, times, is_training=False):
         elif opponent_type == 'minmax':
             opponent = AlphaBetaAgent(depth=1, evaluator=ConvolutionEvaluation(*create_check_final_filter()))
         elif opponent_type == 'mcts':
-            opponent = MCTSAgent(samples_limit=20_000, rollout_bound=4)
+            opponent = MCTSAgent(samples_limit=10_000, rollout_bound=2, board_size=BOARD_SIZE)
         env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=BOARD_SIZE, render=False)
         res = run(env, model, RANDOM_STATE, is_training=is_training)
         if res['winner'] == 1:
@@ -35,9 +35,9 @@ def run_series(model, opponent_type, times, is_training=False):
 
 
 def evaluate_dqn(model):
-    wr1 = run_series(model, 'random', EVAL_RANDOM) / EVAL_RANDOM
-    wr2 = run_series(model, 'minmax', EVAL_MINMAX) / EVAL_MINMAX
-    wr3 = run_series(model, 'mcts', EVAL_MCTS) / EVAL_MCTS
+    wr1 = run_series(model, 'random', EVAL_RANDOM, is_training=False) / EVAL_RANDOM
+    wr2 = run_series(model, 'minmax', EVAL_MINMAX, is_training=False) / EVAL_MINMAX
+    wr3 = run_series(model, 'mcts', EVAL_MCTS, is_training=False) / EVAL_MCTS
     return np.mean([wr1, wr2, wr3])
 
 
@@ -49,11 +49,11 @@ def sample_q_architecture(trial):
     in_layers = []
 
     for x in range(layers // 2):
-        in_layers.append(trial.suggest_int(f"layer_{x}_size", 4, last_size // 2))
+        in_layers.append(trial.suggest_int(f"layer_{x}_size", last_size // 4, last_size // 2))
         last_size = in_layers[-1]
 
     if layers % 2 == 1:
-        middle = (trial.suggest_int(f"layer_{layers // 2 + 1}_size", 4, last_size // 2), )
+        middle = (trial.suggest_int(f"layer_{layers // 2 + 1}_size", 2, last_size // 2), )
     else:
         middle = ()
 
@@ -90,18 +90,18 @@ def objective(trial):
 
     agent = DQN(**params)
 
-    run_series(agent, 'random', random_rounds)
-    run_series(agent, 'minmax', minmax_rounds)
-    run_series(agent, 'mcts', mcts_rounds)
+    run_series(agent, 'random', random_rounds, is_training=True)
+    run_series(agent, 'minmax', minmax_rounds, is_training=True)
+    run_series(agent, 'mcts', mcts_rounds, is_training=True)
 
-    agent.save(f'data/zoo/{trial.number}.pt')
+    agent.save(f'data/zoo/v3/{trial.number}.pt')
 
     return evaluate_dqn(agent)
 
 
 study = optuna.create_study(
     storage="sqlite:///data/dqn.sqlite3",
-    study_name="dqn_v2",
+    study_name="dqn_v3_mcts",
     load_if_exists=True,
     direction="maximize"
 )
