@@ -161,7 +161,7 @@ class Tournament:
                         wins[j] += 1
 
             for player, win in zip(players, wins):
-                player.update(win, self.players_from_population - 1)
+                player.update(win, len(players) - 1)
 
     def best_players(self, n: int) -> List[Player]:
         players = []
