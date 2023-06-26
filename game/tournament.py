@@ -164,14 +164,20 @@ class Tournament:
             for player, win in zip(players, wins):
                 player.update(win, self.players_from_population - 1)
 
+            self.log_best_players()
+
     def best_players(self, n: int) -> List[Player]:
         players = []
 
         for population in self.populations:
             players += population.population
 
-        values = [player.num_wins / player.num_games + 1e-5 for player in players]
+        values = [player.num_wins / (player.num_games + 1e-5) for player in players]
         return [players[i] for i in np.argsort(values)[::-1][:n]]
+
+    def log_best_players(self):
+        for i, player in enumerate(self.best_players(10), start=1):
+            print(f'{i}. [{player.num_wins / (player.num_games + 1e-5):.3f}] {player}')
 
 
 if __name__ == '__main__':

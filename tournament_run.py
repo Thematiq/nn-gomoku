@@ -4,7 +4,7 @@ from glob import glob
 from evaluation import ConvolutionEvaluation, create_check_final_filter
 
 
-tournament = Tournament(tournaments_num=20, players_from_population=2, board_size=9, c=1.41)
+tournament = Tournament(tournaments_num=40, players_from_population=2, board_size=9, c=1.41)
 
 BOARD_SIZE = 9
 RANDOM_STATE = 42
@@ -38,6 +38,9 @@ dqn_params = [
         'experience_replay_steps': 9
     },
 
+    # 25
+    {"board_size": 9, "seed": 42, "sizes": [81, 32, 16, 16, 32, 81], "gamma": 0.649683571665094, "learning_rate": 0.003024950097786412, "epsilon": 0.9700138138334837, "epsilon_decay": 0.9725162772337953, "soft_update": 0.024612358447860735, "capacity": 23510, "experience_replay_steps": 2},
+
     # 5
     {
         'board_size': BOARD_SIZE,
@@ -51,6 +54,9 @@ dqn_params = [
         'capacity': 30992,
         'experience_replay_steps': 2
     },
+
+    # 24
+    {"board_size": 9, "seed": 42, "sizes": [81, 32, 16, 16, 32, 81], "gamma": 0.6328118201543804, "learning_rate": 0.002830273817536564, "epsilon": 0.9680437500836718, "epsilon_decay": 0.9717367968682852, "soft_update": 0.02439810922171807, "capacity": 38477, "experience_replay_steps": 2},
 
     # 15
     {

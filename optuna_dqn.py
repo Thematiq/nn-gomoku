@@ -1,4 +1,5 @@
 import optuna
+import json
 import gymnasium as gym
 import numpy as np
 
@@ -17,7 +18,7 @@ EVAL_MINMAX = 10
 EVAL_MCTS = 15
 
 
-def run_series(model, opponent_type, times, is_training):
+def run_series(model, opponent_type, times, is_training, mcts_rounds=10_000):
     wins = 0
 
     for _ in range(times):
@@ -26,7 +27,7 @@ def run_series(model, opponent_type, times, is_training):
         elif opponent_type == 'minmax':
             opponent = AlphaBetaAgent(depth=1, evaluator=ConvolutionEvaluation(*create_check_final_filter()))
         elif opponent_type == 'mcts':
-            opponent = MCTSAgent(samples_limit=10_000, rollout_bound=2, board_size=BOARD_SIZE)
+            opponent = MCTSAgent(samples_limit=mcts_rounds, rollout_bound=2, board_size=BOARD_SIZE)
         env = gym.make('Gomoku-v1', opponent=opponent.opponent_policy, board_size=BOARD_SIZE, render=False)
         res = run(env, model, RANDOM_STATE, is_training=is_training)
         if res['winner'] == 1:
@@ -38,7 +39,8 @@ def evaluate_dqn(model):
     wr1 = run_series(model, 'random', EVAL_RANDOM, is_training=False) / EVAL_RANDOM
     wr2 = run_series(model, 'minmax', EVAL_MINMAX, is_training=False) / EVAL_MINMAX
     wr3 = run_series(model, 'mcts', EVAL_MCTS, is_training=False) / EVAL_MCTS
-    return np.mean([wr1, wr2, wr3])
+    wr4 = run_series(model, 'mcts', EVAL_MCTS, is_training=False, mcts_rounds=20_000) / EVAL_MCTS
+    return np.mean([wr1, wr2, wr3, wr4])
 
 
 def sample_q_architecture(trial):
@@ -84,13 +86,19 @@ def sample_dqn_params(trial):
 
 def objective(trial):
     params = sample_dqn_params(trial)
-    random_rounds = trial.suggest_int("random_rounds", 5, 200)
-    minmax_rounds = trial.suggest_int("minmax_rounds", 5, 150)
-    mcts_rounds = trial.suggest_int("mcts_rounds", 5, 100)
+
+    with open(f'data/zoo_params/{trial.number}.json', 'w') as f:
+        json.dump(params, f)
+
+    random_rounds = trial.suggest_int("random_rounds", 100, 1000)
+    mcts_dumb = trial.suggest_int("mcts_rounds_dumb", 100, 500)
+    minmax_rounds = trial.suggest_int("minmax_rounds", 100, 1000)
+    mcts_rounds = trial.suggest_int("mcts_rounds", 50, 250)
 
     agent = DQN(**params)
 
     run_series(agent, 'random', random_rounds, is_training=True)
+    run_series(agent, 'mcts', mcts_dumb, mcts_rounds=2_000, is_training=True)
     run_series(agent, 'minmax', minmax_rounds, is_training=True)
     run_series(agent, 'mcts', mcts_rounds, is_training=True)
 
@@ -106,4 +114,4 @@ study = optuna.create_study(
     direction="maximize"
 )
 
-study.optimize(objective, n_trials=1_000, n_jobs=1)
+study.optimize(objective, n_trials=1_000, n_jobs=2)
