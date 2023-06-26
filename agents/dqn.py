@@ -4,26 +4,36 @@ import torch
 import torch.nn as nn
 import torch.optim
 
+from typing import List
 from agents import Agent
 from agents.random_agent import RandomAgent
 from agents.utils import ExperienceReplay
 
 
 class QNetwork(torch.nn.Module):
-    def __init__(self, board_size: int, hidden_dim: int = 128) -> None:
+    def __init__(self, sizes: List[int]) -> None:
         super(QNetwork, self).__init__()
-
-        self.fc1 = torch.nn.Linear(board_size ** 2, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = torch.nn.Linear(hidden_dim, board_size ** 2)
 
         self.relu = torch.nn.ReLU()
 
+        linear_layers = [
+            torch.nn.Linear(sizes[idx - 1], sizes[idx])
+            for idx in range(1, len(sizes))
+        ]
+
+        relu_layers = [self.relu] * (len(linear_layers) - 1)
+
+        res = [None] * (len(linear_layers) + len(relu_layers))
+        res[::2] = linear_layers
+        res[1::2] = relu_layers
+
+        self.model = torch.nn.Sequential(
+            *res
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.flatten(start_dim=1)
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        return self.fc3(x)
+        return self.model(x)
 
 
 class DQN(Agent):
@@ -68,6 +78,7 @@ class DQN(Agent):
             self,
             board_size: int,
             seed: int = 42,
+            sizes: List[int] = None,
             gamma: float = 0.99,
             learning_rate: float = 3e-4,
             epsilon: float = 0.9,
@@ -78,10 +89,13 @@ class DQN(Agent):
             batch_size: int = 64,
             experience_replay_steps: int = 5
     ) -> None:
+        if sizes is None:
+            sizes = (board_size ** 2, 128, board_size ** 2)
+
         torch.manual_seed(seed)
 
-        self.q = QNetwork(board_size)
-        self.q_target = QNetwork(board_size)
+        self.q = QNetwork(sizes)
+        self.q_target = QNetwork(sizes)
         self.q_target.load_state_dict(self.q.state_dict())
         self.optimizer = torch.optim.Adam(self.q.parameters(), lr=learning_rate)
 
@@ -137,8 +151,9 @@ class DQN(Agent):
     def save(self, path: str) -> None:
         torch.save(self.q.state_dict(), path)
 
-    def load(self, path: str) -> None:
+    def load(self, path: str):
         self.q.load_state_dict(torch.load(path))
+        return self
 
     def opponent_policy(self, state: torch.Tensor, *_) -> int:
         return self.act(-state, is_training=False)

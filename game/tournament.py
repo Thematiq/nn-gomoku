@@ -3,7 +3,7 @@ from typing import Dict, List
 
 import numpy as np
 import gymnasium as gym
-from tqdm import trange
+from tqdm import tqdm
 
 from agents import *
 import env
@@ -76,7 +76,8 @@ class Population:
 
     def new_player(self, params: Dict, load_path: str = None) -> None:
         if load_path is not None:
-            self.population.append(Player(self.agent_type.load(load_path), params, self.c))
+            print(f"Loading model {load_path}")
+            self.population.append(Player(self.agent_type(**params).load(load_path), params, self.c))
         else:
             self.population.append(Player(self.agent_type(**params), params, self.c))
 
@@ -145,7 +146,7 @@ class Tournament:
         return info['winner'] == 1
 
     def run(self) -> None:
-        for tournaments in trange(self.tournaments_num):
+        for tournaments in tqdm(range(self.tournaments_num), desc="Tournament no: ", position=0):
             players = []
 
             for population in self.populations:
@@ -153,8 +154,8 @@ class Tournament:
 
             wins = [0] * len(players)
 
-            for i in range(len(players)):
-                for j in range(i + 1, len(players)):
+            for i in tqdm(range(len(players)), desc="First opponent: ", position=1, leave=True):
+                for j in tqdm(range(i + 1, len(players)), desc="Second opponent: ", position=2, leave=True):
                     if self._play_game(players[i], players[j]):
                         wins[i] += 1
                     else:
@@ -163,14 +164,20 @@ class Tournament:
             for player, win in zip(players, wins):
                 player.update(win, len(players) - 1)
 
+            self.log_best_players()
+
     def best_players(self, n: int) -> List[Player]:
         players = []
 
         for population in self.populations:
             players += population.population
 
-        values = [player.num_wins / player.num_games for player in players]
+        values = [player.num_wins / (player.num_games + 1e-5) for player in players]
         return [players[i] for i in np.argsort(values)[::-1][:n]]
+
+    def log_best_players(self):
+        for i, player in enumerate(self.best_players(10), start=1):
+            print(f'{i}. [{player.num_wins / (player.num_games + 1e-5):.3f}] {player}')
 
 
 if __name__ == '__main__':
